@@ -12,7 +12,6 @@ call pathogen#runtime_append_all_bundles()
 set selection=inclusive
 set ruler       " show the cursor position all the time
 set showcmd     " display incomplete commands
-set number      " set line numbers
 
 filetype on
 filetype plugin on
@@ -41,15 +40,12 @@ set background=dark
 colorscheme torte
 syntax sync fromstart
 let g:python_highlight_space_errors=1
+
+" visual indentations
 let g:indent_guides_guide_size=1
 let g:indent_guides_enable_on_vim_startup=1
 
-" haskell stuff
-" use ghc functionality for haskell files
-au Bufenter *.hs compiler ghc
-" Configure browser for haskell_doc.vim
-let g:haddock_browser = "open"
-let g:haddock_browser_callformat = "%s %s"
+set number      " set line numbers
 
 set backspace=eol,start,indent
 
@@ -60,7 +56,6 @@ set expandtab
 set softtabstop=4
 set autoindent
 set smarttab
-set smartindent
 
 "mouse always enabled (also in terminal)
 set mouse=a
@@ -108,16 +103,7 @@ vnoremap <C-S-Right> w
 nnoremap <C-S-Right> gh<C-O>w
 inoremap <C-S-Right> <C-O>gh<C-O>w
 
+let g:syntastic_python_checker = 'pyflakes'
 
 cmap w!! %!sudo tee > /dev/null %
-
-"OSX specific
-if has("gui_macvim")
-    let macvim_hig_shift_movement = 1
-endif
-
-
 set wildignore+=intustall/**
-set wildignore+=GUI/public/OLH/**
-set wildignore+=build/**
-set wildignore+=doc/_build/**

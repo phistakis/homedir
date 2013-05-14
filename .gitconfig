@@ -1,16 +1,18 @@
 [user]
-	name = Sagiv Malihi
-	email = sagiv@intucellsystems.com
+	name = Aviv Shahar 
+	email = ashahar@cisco.com
 [color]
 	diff = auto
 	status = auto
 	branch = auto
 [core]
-	excludesfile = /Users/sagiv/.gitignoreglobal
+	excludesfile = /Users/$USER/.gitignore_global
+	autocrlf = input
 [alias]
     trash = !git add . && git commit -m 'trash' && git reset --hard HEAD^
     propose = !git push origin +HEAD:$USER/$(git-symbolic-ref HEAD | sed 's/^refs\\/heads\\///')
     unpropose = !git push origin +:$USER/$(git-symbolic-ref HEAD | sed 's/^refs\\/heads\\///')
+    graph = log --graph --pretty=format:'%C(yellow)%h%Creset%C(yellow bold)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
 [push]
     default = tracking
 

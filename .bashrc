@@ -5,6 +5,10 @@
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return
 
+# allowing auto complete for git commands names
+# result of "complete -p git" ==> complete -o bashdefault -o default -o nospace -F _git git
+#. ~/scripts/make-completion-wrapper.sh
+
 # don't put duplicate lines in the history. See bash(1) for more options
 # ... or force ignoredups and ignorespace
 HISTCONTROL=ignoredups:ignorespace
@@ -33,6 +37,8 @@ case "$TERM" in
     xterm-color) color_prompt=yes;;
 esac
 
+ulimit -n 2000
+
 # uncomment for a colored prompt, if the terminal has the capability; turned
 # off by default to not distract the user: the focus in a terminal window
 # should be on the output of commands, not on the prompt
@@ -50,8 +56,8 @@ if [ -n "$force_color_prompt" ]; then
 fi
 
 if [ "$color_prompt" = yes ]; then
-    #PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u\[\033[00m\]@\[\033[01;36m\]\h\[\033[00m\]\[\033[01;31m\]$(git branch 2>/dev/null|grep -e ^* | tr "*" ":" | tr -d " ")\[\033[00m\]:\[\033[01;33m\]\w\[\033[00m\]> ' 
+    HOSTDOM=`hostname -f | sed s/\.intucell\.net//g`
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u\[\033[00m\]@\[\033[01;36m\]${HOSTDOM}\[\033[00m\]\[\033[01;31m\]$(git branch 2>/dev/null|grep -e ^* | tr "*" ":" | tr -d " ")\[\033[00m\]:\[\033[01;33m\]\w\[\033[00m\]> ' 
 else
     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
@@ -82,22 +88,10 @@ fi
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
+alias less='less -R'
 
-# enable programmable completion features (you don't need to enable
-# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
-# sources /etc/bash.bashrc).
-if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
-    . /etc/bash_completion
-fi
-
-# if [ -f ~/.bash_completions ] && ! shopt -oq posix; then
-#    . ~/.bash_completions
-#fi
-
-# export BASH_COMPLETION_COMPAT_DIR='/opt/local/etc/bash_completion.d/'
-if [ -f /opt/local/etc/bash_completion ]; then
-    . /opt/local/etc/bash_completion
-fi
+bind '"\e[A": history-search-backward'
+bind '"\e[B": history-search-forward'
 
 # Alias definitions.
 # You may want to put all your additions into a separate file like
@@ -108,23 +102,23 @@ if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
-export PYTHONPATH=$HOME/work/python/
-export PYTHONSTARTUP=$HOME/work/python/startup.py
-
-if [ -t 0 ]; then
-    stty stop undef
-    stty start undef
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
+    . /etc/bash_completion
 fi
 
-export EDITOR=vim
-export CLICOLOR=1
+if [ -f /opt/local/etc/bash_completion ]; then
+    . /opt/local/etc/bash_completion
+fi
 
+# for documentation compiling
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
-
-#virtualenvwrapper
-export WORKON_HOME=~/work
-. /usr/local/bin/virtualenvwrapper.sh
+export NOSE_REDNOSE=1
 
 
+chmod 777 $SSH_TTY
+# [ -x "$SSH_TTY" ] || chmod 777 $SSH_TTY
 

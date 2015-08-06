@@ -7,18 +7,18 @@
 
 # allowing auto complete for git commands names
 # result of "complete -p git" ==> complete -o bashdefault -o default -o nospace -F _git git
-#. ~/scripts/make-completion-wrapper.sh
+. ~/scripts/git-completion.bash
 
 # don't put duplicate lines in the history. See bash(1) for more options
 # ... or force ignoredups and ignorespace
-HISTCONTROL=ignoredups:ignorespace
+# HISTCONTROL=ignoredups:ignorespace
 
 # append to the history file, don't overwrite it
 shopt -s histappend
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=1000
-HISTFILESIZE=2000
+HISTSIZE=100000
+HISTFILESIZE=200000
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -98,8 +98,8 @@ bind '"\e[B": history-search-forward'
 # ~/.bash_aliases, instead of adding them here directly.
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
+if [ -f ~/.bashaliases ]; then
+    . ~/.bashaliases
 fi
 
 # enable programmable completion features (you don't need to enable
@@ -117,6 +117,8 @@ fi
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export NOSE_REDNOSE=1
+
+export PATH=/intucell/packages/mongodb-2.2.2/bin/:$PATH
 
 
 chmod 777 $SSH_TTY

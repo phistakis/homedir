@@ -1,0 +1,87 @@
+alias mv='mv -v'
+alias .='source'
+alias local_easy_install="easy_install -d $HOME/work/python -s $HOME/bin"
+alias updisp="export DISPLAY=`echo $SSH_CLIENT | awk {'print $1'}`:0.0"
+
+function lsw() { ls -lah `which $*`; }
+function lw () { less `which $*`; }
+function from() { git grep -i --color $1 | grep -oE "from.*" | grep import | sort | uniq ; }
+function def() { git grep -i --color $1 | grep -E "(class|def) | grep -v html" ; }
+function vm() { ssh intucell@ic-vm-$1.cisco.com ; }
+function vmc() { ssh-copy-id intucell@ic-vm-$1.cisco.com ; }
+function phy() { ssh intucell@ic-phy-$1.cisco.com ; }
+function phyc() { ssh-copy-id intucell@ic-phy-$1.cisco.com ; }
+function att() { ssh deb0$1.att$2.us.intucell.net; }
+function attc() { ssh-copy-id deb0$1.att$2.us.intucell.net; }
+function attlabs() { ssh deb0$1.attlabs.us.intucell.net; }
+function attlabsc() { ssh-copy-id deb0$1.attlabs.us.intucell.net; }
+function telcel() { ssh deb0$1.telcel$2.us.intucell.net; }
+function telcelc() { ssh-copy-id deb0$1.telcel$2.us.intucell.net; }
+function claro() { ssh deb0$1.claro$2.pe.intucell.net; }
+function claroc() { ssh-copy-id deb0$1.claro$2.pe.intucell.net; }
+function verizon() { ssh intucell@deb0$1.verizon$2.us.intucell.net; }
+function verizonc() { ssh-copy-id intucell@deb0$1.verizon$2.us.intucell.net; }
+
+
+function from() { git grep -i --color $1 | grep -oE "from.*" | grep import | sort | uniq ; }
+function ren() { for f in `find . -name '*$1'`; do mv $f `echo $f | sed -e 's/$1/$2/g'` ; done; }
+
+alias class=def
+alias venv='. /intucell/latest/bin/activate'
+alias vtenv='. /intucell/latest/testing/bin/activate'
+alias title=label
+alias grepi='\grep --color'
+alias grep='grep -i --color'
+alias threads='ps -emo %cpu,pid,tid,user,arg'
+alias psgrep='ps -ef | grep'
+alias psallnum="psgrep intucell | tr -s ' ' | cut -d ' ' -f 3 | tr '\n' ' '"
+alias kill_intucell="sudo kill -f intucell"
+alias clnpyc='find . -name "*.pyc" -delete'
+alias clnswp='find . -name "*.swp" -delete'
+alias src-run='make src-run testing-virtualenv data_path=/intucell/data$(basename $PWD) debug=yes'
+alias tpython='/intucell/latest/testing/bin/python'
+alias ip='/intucell/latest/bin/ipython'
+alias tp='/intucell/latest/testing/bin/ipython'
+alias sp='python ~/ishells/with_store.py'
+alias cli='/intucell/latest/bin/son_cli -i -H 127.0.0.1 -p 5000'
+alias mon="/intucell/packages/mongodb-osx-x86_64-2.6.9/bin/mongo --port 5022"
+alias sonshell='/intucell/latest/bin/son_shell --root /intucell/data$(basename $PWD)'
+
+
+# git aliases
+unalias gp
+alias g='git'
+alias ggi='git grep --color'
+alias gg='git grep -i --color'
+alias gs='git status'
+alias gf='git fetch'
+alias gpr='git pull --rebase'
+alias gbl='git blame HEAD'
+alias gsu='git submodule update --init'
+alias grso='git remote show origin'
+alias gmine='gb -r | grep -Eo "aviv.*"'
+alias gmineline='gmine | tr -s "\n" " "'
+alias gc='git checkout'
+alias gd='git diff'
+alias gl='git log'
+alias glo='git log --oneline'
+alias gb='git branch'
+alias gbr='git branch -r | grep'
+alias glaviv='git log --author="Aviv Shahar"'
+
+
+# folders
+alias cdn='cd ~/dev/son5'
+alias cdb='cd ~/dev/son5b'
+alias cdo='cd ~/dev/son4'
+alias cdg='cd ~/dev/geo-locator'
+alias cds='cd ~/dev/sces5'
+alias cdt='cd ~/dev/intest'
+alias cdl='cd /intucell/data/logs'
+
+# tests
+alias nosetests='/intucell/latest/testing/bin/son_nosetests --root=/intucell/data$(basename $PWD) --with-doctest --with-gevent_framework -s'
+alias nosecover='nosetests --with-coverage --cover-html --cover-html-dir=/tmp/coverage'
+alias nosepudb='nosetests -v --pudb-failure --pudb'
+alias systests='/intucell/latest/testing/bin/qa_systest tests/system/ericsson/scenarios/start_scenario.py'
+

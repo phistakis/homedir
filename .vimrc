@@ -44,8 +44,10 @@ let g:python_highlight_space_errors=1
 " visual indentations
 let g:indent_guides_guide_size=1
 let g:indent_guides_enable_on_vim_startup=1
+set guifont=Monaco:h16
 
 set number      " set line numbers
+set noswapfile
 
 set backspace=eol,start,indent
 
@@ -84,6 +86,12 @@ inoremap <s-tab> <c-r>=InsertTabWrapper ("backward")<cr>
 inoremap <F1> <ESC>
 noremap <F1> <ESC>
 
+map! <F2> import pudb; pudb.set_trace()<Esc>
+map! <F3> from logging import getLogger; l = getLogger(); l.warning('bla') # REMOVE ME<Esc>
+map! <F4> from son.platform.logging.console_sink import log_to_console; log_to_console()<Esc>
+map! <F5> from son.utils import ishell; ishell()<Esc>
+map! <F6> import traceback; traceback.print_stack()<Esc>
+
 inoremap <C-A> <Home>
 noremap <C-A> <Home>
 
@@ -107,3 +115,7 @@ let g:syntastic_python_checker = 'pyflakes'
 
 cmap w!! %!sudo tee > /dev/null %
 set wildignore+=intustall/**
+
+" Highlight occurences of word under cursor
+" autocmd CursorMoved * silent! exec 'match IncSearch /\<' . expand('<cword>') . '\>/'
+

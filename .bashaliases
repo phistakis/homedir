@@ -11,8 +11,10 @@ function vm() { ssh intucell@ic-vm-$1.cisco.com ; }
 function vmc() { ssh-copy-id intucell@ic-vm-$1.cisco.com ; }
 function phy() { ssh intucell@ic-phy-$1.cisco.com ; }
 function phyc() { ssh-copy-id intucell@ic-phy-$1.cisco.com ; }
-function att() { ssh deb0$1.att$2.us.intucell.net; }
-function attc() { ssh-copy-id deb0$1.att$2.us.intucell.net; }
+function att() { printf -v x "%03d" $1 ;ssh deb$x.att$2.us.intucell.net; }
+function attc() { printf -v x "%03d" $1 ;ssh-copy-id deb$x.att$2.us.intucell.net; }
+function sprint() { printf -v x "%03d" $1 ;ssh deb$x.spr$2.us.intucell.net; }
+function sprintc() { printf -v x "%03d" $1 ;ssh-copy-id deb$x.spr$2.us.intucell.net; }
 function attlabs() { ssh deb0$1.attlabs.us.intucell.net; }
 function attlabsc() { ssh-copy-id deb0$1.attlabs.us.intucell.net; }
 function telcel() { ssh deb0$1.telcel$2.us.intucell.net; }
@@ -21,11 +23,14 @@ function claro() { ssh deb0$1.claro$2.pe.intucell.net; }
 function claroc() { ssh-copy-id deb0$1.claro$2.pe.intucell.net; }
 function verizon() { ssh intucell@deb0$1.verizon$2.us.intucell.net; }
 function verizonc() { ssh-copy-id intucell@deb0$1.verizon$2.us.intucell.net; }
+function sshgit() { ssh $1 -R 8075:ic-code.cisco.com:22; }
+function fname() { find . -name "*$1*"; }
 
 
 function from() { git grep -i --color $1 | grep -oE "from.*" | grep import | sort | uniq ; }
 function ren() { for f in `find . -name '*$1'`; do mv $f `echo $f | sed -e 's/$1/$2/g'` ; done; }
 
+alias readline='/intucell/latest/bin/easy_install readline; /intucell/latest/testing/bin/easy_install readline'
 alias class=def
 alias venv='. /intucell/latest/bin/activate'
 alias vtenv='. /intucell/latest/testing/bin/activate'
@@ -47,6 +52,7 @@ alias cli='/intucell/latest/bin/son_cli -i -H 127.0.0.1 -p 5000'
 alias mon="/intucell/packages/mongodb-osx-x86_64-2.6.9/bin/mongo --port 5022"
 alias sonshell='/intucell/latest/bin/son_shell --root /intucell/data$(basename $PWD)'
 
+function grepindent() { grep -nE "^ {$1}" $3 | grep -vE " {$2}"; }
 
 # git aliases
 unalias gp
@@ -63,12 +69,15 @@ alias gmine='gb -r | grep -Eo "aviv.*"'
 alias gmineline='gmine | tr -s "\n" " "'
 alias gc='git checkout'
 alias gd='git diff'
+alias gdc='git diff --cached'
 alias gl='git log'
 alias glo='git log --oneline'
 alias gb='git branch'
+alias gbg='git branch | grep'
 alias gbr='git branch -r | grep'
 alias glaviv='git log --author="Aviv Shahar"'
 
+function gbc () { gbg $1 | xargs git checkout; }
 
 # folders
 alias cdn='cd ~/dev/son5'
@@ -76,12 +85,15 @@ alias cdb='cd ~/dev/son5b'
 alias cdo='cd ~/dev/son4'
 alias cdg='cd ~/dev/geo-locator'
 alias cds='cd ~/dev/sces5'
-alias cdt='cd ~/dev/intest'
+alias cdi='cd ~/dev/intest'
+alias cdt='cd ~/dev/tests'
 alias cdl='cd /intucell/data/logs'
 
 # tests
 alias nosetests='/intucell/latest/testing/bin/son_nosetests --root=/intucell/data$(basename $PWD) --with-doctest --with-gevent_framework -s'
 alias nosecover='nosetests --with-coverage --cover-html --cover-html-dir=/tmp/coverage'
 alias nosepudb='nosetests -v --pudb-failure --pudb'
+alias nt=nosetests
+alias np=nosepudb
 alias systests='/intucell/latest/testing/bin/qa_systest tests/system/ericsson/scenarios/start_scenario.py'
 

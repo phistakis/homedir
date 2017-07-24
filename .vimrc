@@ -82,15 +82,16 @@ endfunction
 inoremap <tab> <c-r>=InsertTabWrapper ("forward")<cr>
 inoremap <s-tab> <c-r>=InsertTabWrapper ("backward")<cr> 
 
+" commandT configurations
+let g:CommandTMatchWindowReverse=0
+let g:CommandTHighlightColor=0
+
 "nobody really wants F1 to start vim's help...
 inoremap <F1> <ESC>
 noremap <F1> <ESC>
 
 map! <F2> import pudb; pudb.set_trace()<Esc>
-map! <F3> from logging import getLogger; l = getLogger(); l.warning('bla') # REMOVE ME<Esc>
-map! <F4> from son.platform.logging.console_sink import log_to_console; log_to_console()<Esc>
-map! <F5> from son.utils import ishell; ishell()<Esc>
-map! <F6> import traceback; traceback.print_stack()<Esc>
+map! <F3> import traceback; traceback.print_stack()<Esc>
 
 inoremap <C-A> <Home>
 noremap <C-A> <Home>
@@ -111,11 +112,52 @@ vnoremap <C-S-Right> w
 nnoremap <C-S-Right> gh<C-O>w
 inoremap <C-S-Right> <C-O>gh<C-O>w
 
-let g:syntastic_python_checker = 'pyflakes'
+func GitGrep(...)
+  let save = &grepprg
+  set grepprg=git\ grep\ -n\ $*
+  let s = 'grep'
+  for i in a:000
+    let s = s . ' ' . i
+  endfor
+  exe s
+  let &grepprg = save
+endfun
+
+function! GitGrep2(...)
+    let main_winnr = gettabwinvar(tabpagenr(), winnr(), 'main_winnr', winnr())
+    let git_winnr = gettabwinvar(tabpagenr(), main_winnr, 'git_winnr', -1)
+    if main_winnr == gettabwinvar(tabpagenr(), git_winnr, 'main_winnr', -1)
+        execute git_winnr . 'wincmd w'
+        execute 'bd'
+    endif
+    silent belowright 12 new
+    set filetype=qf
+    set buftype=nofile
+    set hidden
+    call settabwinvar(tabpagenr(), main_winnr, 'git_winnr', winnr())
+    call settabwinvar(tabpagenr(), winnr(), 'main_winnr', main_winnr)
+    execute 'silent 0read !git grep --full-name -n --no-color ' . join(a:000, ' ')
+    call histadd(':', 'GitGrep ' . join(a:000, ' '))
+    nnoremap <buffer> <cr> :keepjumps call JumpToFile(0)<cr>
+    nnoremap <buffer> <C-cr> :keepjumps call JumpToFile(1)<cr>
+    nnoremap <buffer> <Esc> :bd<cr>
+endfunction
+
+command! -nargs=* GitGrepCword call GitGrep( ' -w ' . expand('<cword>') )
+command! -nargs=* GitGrep call GitGrep( '<args>' )
+
+nnoremap <silent> <leader>g :GitGrepCword<CR>
+nnoremap <silent> <leader>h :GitGrep
+nnoremap <silent> <leader>gb :GitBlame<CR>
+
+
+let g:syntastic_python_checkers = ['flake8']
 
 cmap w!! %!sudo tee > /dev/null %
 set wildignore+=intustall/**
 
 " Highlight occurences of word under cursor
 " autocmd CursorMoved * silent! exec 'match IncSearch /\<' . expand('<cword>') . '\>/'
+
+au BufNewFile,BufRead *.html,*.htm,*.jin,*.shtml,*.stm set ft=jinja
 

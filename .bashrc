@@ -118,9 +118,9 @@ export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export NOSE_REDNOSE=1
 
-export PATH=/intucell/packages/mongodb-2.2.2/bin/:$PATH
-
 
 chmod 777 $SSH_TTY
 # [ -x "$SSH_TTY" ] || chmod 777 $SSH_TTY
 
+
+export PATH="$PATH:$HOME/.rvm/bin" # Add RVM to PATH for scripting

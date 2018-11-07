@@ -1,8 +1,24 @@
-export AMAZON='34.248.150.115'
-export AGENT='54.76.12.219'
-alias rpycserver='rsync -avz pysrc/comet/comet/agent $AGENT:'
-alias sshamazon='ssh $AMAZON'
-alias syncamazon='rsync -avz --delete --exclude *.pyc --exclude *.o --exclude dist --exclude mount_points --exclude venv --exclude management --exclude .git ~/vast/orion $AMAZON:'
+export RELEASE='1.1'
+export AZURE_NAME='rnd-aviv'
+export VM=$AZURE_NAME-vastdata.eastus2.cloudapp.azure.com
+export VAST11='10.27.40.29'
+export VAST2='10.27.30.7'
+export HW='10.27.252.10'
+export HW1='10.27.60.1'
+export HW2='10.27.60.3'
+export HWJ='10.27.252.16'
+export RESOURCE_GROUP='vastdata-automation-eastus2'
+
+alias sshvm='ssh $VM -t "cd orion; bash"'
+alias hw='ssh $HW'
+alias hw1='ssh $HW1'
+alias hw2='ssh $HW2'
+alias hwj='ssh $HWJ'
+alias vast11='ssh $VAST11'
+alias vast2='ssh $VAST2'
+alias tunnelvm='tunnel $VM'
+alias scp2vm='scp -r $1 $VM:'
+alias syncvm='_syncvm $VM'
 alias sshdebug='ssh debug.vastdata.com'
 alias sshbouncer='ssh 52.214.180.227'
 alias sshopenelec='ssh 192.168.1.198'
@@ -13,20 +29,68 @@ alias rsy='rsync -avz --progress'
 alias .='source'
 alias local_easy_install="easy_install -d $HOME/work/python -s $HOME/bin"
 alias updisp="export DISPLAY=`echo $SSH_CLIENT | awk {'print $1'}`:0.0"
+alias vmsshell="docker exec -it \$(docker ps -q --filter label=role=vms) vms shell"
 
-function installamazon() {
-    set +x
-    sed -i -e "s/export AMAZON='[0-9].*/export AMAZON='$1'/" ~/.bashaliases ;
+function set_vm_ip() {
+    sed -i -e "s/export VM='[0-9].*/export VM='$1'/" ~/.bashaliases ;
     . ~/.bashaliases ;
-    syncamazon ;
-    rsync -avz --delete --exclude *.o --exclude dist --exclude mount_points --exclude venv --exclude .git ~/vast/orion $AMAZON:
-    sshamazon docker login git.vastdata.com:4567/dev/orion -u aviv -p 12345612 ;
-    sshamazon "cd orion; venv/bin/pip install pudb" ;
-    sshamazon "sudo yum install -y htop" ;
-    sshamazon "docker pull git.vastdata.com:4567/dev/orion:runner_image &; cd orion; scons -j8 python_debug=1 pysrc venv" ;
-    sshamazon
-    }
+}
 
+function startvm() {
+    az vm start --name $AZURE_NAME --resource-group $RESOURCE_GROUP ;
+    sleep 5
+    sshvm ./orion/scripts/login_to_aws_ecr.sh
+    sshvm sudo ./orion/scripts/login_to_aws_ecr.sh
+    mountazure
+    # set_vm_ip `az vm show --name $AZURE_NAME --resource-group $RESOURCE_GROUP --query "publicIps" -d | tr -d '"'`
+}
+
+function stopvm() {
+    az vm stop --name $AZURE_NAME --resource-group $RESOURCE_GROUP ;
+}
+
+function tunnel() {
+    ssh -L 8000:localhost:443 $1
+}
+
+function installvm() {
+    set +x
+    set_vm_ip $1
+    setupazure $1
+}
+
+function install_loopback() {
+    set +x
+    ~/orion/scripts/install_loopback_cluster.sh $1
+    source ~/orion/scripts/setenv
+}
+
+function _syncvm() {
+rsync -avz --exclude *.pyc --exclude *.o --exclude dist --exclude mount_points --exclude venv --exclude pysrc/vapi/vapi/swagger --exclude .git . $1:orion
+}
+
+function setupamazon() {
+    ./scripts/prepare_amazon_machine.sh $1
+}
+function setupazure() {
+    ./scripts/prepare_vm.sh $VM
+    mountazure
+}
+function mountazure() {
+    sshvm sudo mkdir -p /mnt/resource/vast/drives
+    sshvm sudo chown -R centos:centos /mnt/resource/vast
+    sshvm sudo mount --bind /mnt/resource/vast/drives /vast/drives
+}
+
+function watch() {
+    while :; 
+      do 
+      clear
+      date
+      $1
+      sleep 2
+    done
+}
 function lsw() { ls -lah `which $*`; }
 function lw () { less `which $*`; }
 function from() { git grep -i --color $1 | grep -oE "from.*" | grep import | sort | uniq ; }
@@ -37,8 +101,9 @@ function fname() { find . -name "*$1*"; }
 function ggg() { grep -iR $1 src pysrc tests; }
 function ggp() { find src pysrc tests management -name "*.py" | xargs grep -i --color $1 ; }
 function ggpl() { ggp $1 | less ; }
-function dockerdeploy() { docker build -f install/deploy_Dockerfile -t git.vastdata.com:4567/dev/orion:$1 . && docker push git.vastdata.com:4567/dev/orion:$1 ; }
+function dockerdeploy() { docker build -f install/deploy_Dockerfile -t docker.vastdata.com/dev/orion:$1 . && docker push docker.vastdata.com/dev/orion:$1 ; }
 function printjoin() { python -c "print(' '.join($@))"  | pbcopy; }
+function logdockers() { while true; do for d in 100 200 300 400 ; do /vast/data/11.0.0.1-4$d/logdocker.sh ; done; echo; echo "********************** $(date)"; echo; done; }
 
 
 function ren() { for f in `find . -name '*$1'`; do mv $f `echo $f | sed -e 's/$1/$2/g'` ; done; }
@@ -55,10 +120,7 @@ alias psgrep='ps -ef | grep'
 alias clnpyc='find . -name "*.pyc" -delete'
 alias clnswp='find . -name "*.swp" -delete'
 #alias tpython='/dev/testing/bin/python'
-alias ip='/dev/bin/ipython'
-#alias tp='/dev/testing/bin/ipython'
-alias sp='python ~/ishells/with_store.py'
-#alias cli='/dev/bin/son_cli -i -H 127.0.0.1 -p 5000'
+alias ipy='~/orion/venv/bin/ipython'
 
 function grepindent() { grep -nE "^ {$1}" $3 | grep -vE " {$2}"; }
 
@@ -70,9 +132,18 @@ alias gs='git status'
 alias gss='git show --stat'
 alias gf='git fetch'
 alias gpr='git pull --rebase'
-alias grb='git fetch && git rebase origin/master'
-alias grbi='git fetch && git rebase -i origin/master'
+alias gr='git fetch && git rebase'
+alias gri='git fetch && git rebase -i'
+alias gro='git fetch && git rebase -i --onto'
+alias grm='gr origin/master'
+alias grr='gr origin/release/$RELEASE'
+alias grim='gri origin/master'
+alias grir='gri origin/release/$RELEASE'
+alias grom='gro origin/master'
+alias gror='gro origin/release/$RELEASE'
+alias gau='git add -u'
 alias grc='git rebase --continue'
+alias gau='git add -u'
 alias gbl='git blame HEAD'
 alias gsu='git submodule update --init'
 alias grso='git remote show origin'
@@ -91,22 +162,23 @@ alias gclean='g clean -fdx -e .vagrant -e .sconsign.dblite'
 alias gurl='grep url .git/config | grep -Eo "git@.*" | pbcopy'
 
 function gbc () { git branch | grep $1 | xargs git checkout ; }
+function gload() { gf ; g stash ; g reset --hard origin/avivshahar/`git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,'` ; g stash pop ; }
 function gbs () { git branch | grep $1 | xargs git show ; }
 function gbss () { git branch | grep $1 | xargs git show --stat; }
 function gbd () { git branch | grep $1 | head -n 1 | xargs git branch -d ; }
 function gbD () { git branch | grep $1 | head -n 1 | xargs git branch -D ; }
+function gpopto () { git stash && export LAST_BRANCH=`git rev-parse --abbrev-ref HEAD` && gbc $1; }
+function gpopback () { gbc $LAST_BRANCH && g stash pop; }
+function gprps () { git push -f origin HEAD:$1/`git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,'`/$USER; }
 
 # folders
 alias cdn='cd ~/vast/orion'
+alias cdv='cd ~/orion' # orion path in vm
 alias cdo='cd ~/vast/old_orion'
+alias cdc='cd ~/vast/configs'
+alias cdt='cd ~/vast/tools'
 
-# tests
-#alias nosetests='/intucell/latest/testing/bin/son_nosetests --root=/intucell/data$(basename $PWD) --with-doctest --with-gevent_framework -s'
-alias nosecover='nosetests --with-coverage --cover-html --cover-html-dir=/tmp/coverage'
-alias nosepudb='nosetests -v --pudb-failure --pudb'
-alias nt=nosetests
-alias np=nosepudb
-
-# vagrant
-alias vup='vagrant up'
-alias vsh='vagrant ssh'
+# logins
+function bonzo () { ssh -t bonzo "cd bonzo/traces/*-$1; bash" ; }
+function venus () { ssh -t bonzo "cd venus/traces/*-$1; bash" ; }
+function venusm2 () { ssh -t bonzo "cd venusM2/traces/*-$1; bash" ; }

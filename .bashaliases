@@ -1,4 +1,9 @@
-export RELEASE='1.1'
+source ~/.tokens
+
+export TEAM='TEAM/mgmt-sys'
+export TEAM2='TEAM/mgmt-app'
+export INTEGRATION='TEAM/integration'
+export RELEASE='2.2.0'
 export AZURE_NAME='rnd-aviv'
 export VM=$AZURE_NAME-vastdata.eastus2.cloudapp.azure.com
 export VAST11='10.27.40.29'
@@ -8,9 +13,32 @@ export HW1='10.27.60.1'
 export HW2='10.27.60.3'
 export HWJ='10.27.252.16'
 export RESOURCE_GROUP='vastdata-automation-eastus2'
+export RELSUFFIX='&merge_request%5Btarget_branch%5D=release%2$RELEASE'
+export TEAM_MGMT_SUFFIX='&merge_request%5Btarget_branch%5D=TEAM%2Fmgmt-sys'
+export EXP_MGMT_SUFFIX='&merge_request%5Btarget_branch%5D=TEAM%2Fexpansion'
+export MASTER_SUFFIX='&merge_request%5Btarget_branch%5D=master'
 
-alias sshvm='ssh $VM -t "cd orion; bash"'
-alias hw='ssh $HW'
+
+# pbcopy aliases
+alias suffix_master='echo $MASTER_SUFFIX | pbcopy'
+alias suffix_team='echo $TEAM_MGMT_SUFFIX | pbcopy'
+alias suffix_exp='echo $EXP_MGMT_SUFFIX | pbcopy'
+alias suffix_rel='echo $RELSUFFIX | pbcopy'
+alias cvmsshell="echo 'docker exec -it \$(docker ps -q --filter label=role=vms) vms shell' | pbcopy"
+alias cpudb="echo 'import pudb; pudb.set_trace()' | pbcopy"
+alias clustervms="echo 'from vmsapp.models import Cluster, Vms; c, v = [x.objects.get() for x in [Cluster, Vms]]' | pbcopy"
+alias donetasks="echo 'from vtasks.models import Task; Task.objects.update(state=\"DONE\")' | pbcopy"
+alias untar="echo 'for f in \$(ls */*.tar.zst); do x=\$(echo \$f | grep -o \"[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\"); echo \"tar xf \$f -C \$x -I zstd &\" ; done' | pbcopy"
+alias awscred="grep -i 'export aws_' ~/vast/orion/scripts/vastS3logs.sh | pbcopy"
+
+alias nvimf='nvim $(fzf)'
+alias n='nvim'
+alias nf='nvimf'
+alias sshvm='ssh $VM -t "cd orion; . scripts/setenv; bash"'
+alias sl='sshpass -p vastdata ssh'
+alias svm=sshvm
+alias rasp='ssh rasp'
+alias hw='ssh $HW -t "cd orion; bash"'
 alias hw1='ssh $HW1'
 alias hw2='ssh $HW2'
 alias hwj='ssh $HWJ'
@@ -19,17 +47,24 @@ alias vast2='ssh $VAST2'
 alias tunnelvm='tunnel $VM'
 alias scp2vm='scp -r $1 $VM:'
 alias syncvm='_syncvm $VM'
+alias synchw='_syncvm $HW'
 alias sshdebug='ssh debug.vastdata.com'
 alias sshbouncer='ssh 52.214.180.227'
 alias sshopenelec='ssh 192.168.1.198'
-alias aliases='vim ~/.bashaliases; . ~/.bashaliases'
+alias aliases='n ~/.bashaliases; . ~/.bashaliases'
+alias flakeignore='n ~/.config/flake8'
 alias ualiases='. ~/.bashaliases'
 alias mv='mv -v'
 alias rsy='rsync -avz --progress'
 alias .='source'
 alias local_easy_install="easy_install -d $HOME/work/python -s $HOME/bin"
 alias updisp="export DISPLAY=`echo $SSH_CLIENT | awk {'print $1'}`:0.0"
-alias vmsshell="docker exec -it \$(docker ps -q --filter label=role=vms) vms shell"
+alias vmsshell="docker exec -it -e PYTHONSTARTUP=/vast/install/management/scripts/vms_shell_startup.py vast_vms vms shell"
+alias vmsbash="docker exec -it \$(docker ps -q --filter label=role=vms) bash"
+alias runslash="venv/bin/comet run --without-panic-monitor --without-jira-test-report -m $IMAGE --agent-local-src -o log.root=/vast/logs/aviv"
+alias sedtabs="sed -i -e 's/\t/    /g'"
+
+function torrent() { scp $1 rasp:Downloads/torrents ; }
 
 function set_vm_ip() {
     sed -i -e "s/export VM='[0-9].*/export VM='$1'/" ~/.bashaliases ;
@@ -38,11 +73,6 @@ function set_vm_ip() {
 
 function startvm() {
     az vm start --name $AZURE_NAME --resource-group $RESOURCE_GROUP ;
-    sleep 5
-    sshvm ./orion/scripts/login_to_aws_ecr.sh
-    sshvm sudo ./orion/scripts/login_to_aws_ecr.sh
-    mountazure
-    # set_vm_ip `az vm show --name $AZURE_NAME --resource-group $RESOURCE_GROUP --query "publicIps" -d | tr -d '"'`
 }
 
 function stopvm() {
@@ -66,7 +96,8 @@ function install_loopback() {
 }
 
 function _syncvm() {
-rsync -avz --exclude *.pyc --exclude *.o --exclude dist --exclude mount_points --exclude venv --exclude pysrc/vapi/vapi/swagger --exclude .git . $1:orion
+rsync -avz -R -e 'ssh -i deploy/ssh_key.pem' .git `git ls-files` $1:orion/
+# rsync -avz --exclude *.pyc --exclude *.o --exclude dist --exclude mount_points --exclude venv --exclude pysrc/vapi/vapi/swagger --exclude .git . $1:orion
 }
 
 function setupamazon() {
@@ -77,9 +108,12 @@ function setupazure() {
     mountazure
 }
 function mountazure() {
-    sshvm sudo mkdir -p /mnt/resource/vast/drives
-    sshvm sudo chown -R centos:centos /mnt/resource/vast
-    sshvm sudo mount --bind /mnt/resource/vast/drives /vast/drives
+    sshvm "sudo mkdir -p /mnt/resource/vast/drives && sudo chown -R centos:centos /mnt/resource/vast && sudo mount --bind /mnt/resource/vast/drives /vast/drives"
+}
+
+function know() {
+    LINE=$1
+    sed -i -e "${LINE}d" ~/.ssh/known_hosts
 }
 
 function watch() {
@@ -98,10 +132,6 @@ function def() { git grep -i --color $1 | grep -E "(class|def) | grep -v html" ;
 function vm() { ssh user@ic-phy-$1.bla.com ; }
 function vmc() { ssh-copy-id user@ic-phy-$1.bla.com ; }
 function fname() { find . -name "*$1*"; }
-function ggg() { grep -iR $1 src pysrc tests; }
-function ggp() { find src pysrc tests management -name "*.py" | xargs grep -i --color $1 ; }
-function ggpl() { ggp $1 | less ; }
-function dockerdeploy() { docker build -f install/deploy_Dockerfile -t docker.vastdata.com/dev/orion:$1 . && docker push docker.vastdata.com/dev/orion:$1 ; }
 function printjoin() { python -c "print(' '.join($@))"  | pbcopy; }
 function logdockers() { while true; do for d in 100 200 300 400 ; do /vast/data/11.0.0.1-4$d/logdocker.sh ; done; echo; echo "********************** $(date)"; echo; done; }
 
@@ -120,56 +150,105 @@ alias psgrep='ps -ef | grep'
 alias clnpyc='find . -name "*.pyc" -delete'
 alias clnswp='find . -name "*.swp" -delete'
 #alias tpython='/dev/testing/bin/python'
-alias ipy='~/orion/venv/bin/ipython'
+alias i='ipython'
+alias deployr='deploy $(./scripts/get_last_master_build.py -r release/$RELEASE --latest)'
+alias resurrect='./deploy/vman.sh vastdata.registry.local:5000/dev/orion:$IMAGE deploy/ssh_key.pem  start'
 
+function dockerdeploy() { docker build -f install/deploy_Dockerfile -t docker.vastdata.com/dev/orion:$1 . && docker push docker.vastdata.com/dev/orion:$1 ; }
+function deploy() { scripts/install_loopback_cluster.sh $1 --vms-local ; . scripts/setenv ; }
+function deplovms() {
+    $(~/orion/scripts/get_login_to_aws_ecr_command.sh )
+    FULL_IMAGE=110450271409.dkr.ecr.eu-west-1.amazonaws.com/dev/orion:`./scripts/pipeline_to_image.sh $1`-vms
+    docker run -d -t --rm --net=host --privileged --cap-add=SYS_ADMIN --cap-add=NET_ADMIN --cpus=4 --label=owner=vman -v /vast/data:/vast/data -v /vast/deploy:/vast/deploy -v /vast/vman:/vast/vman -v /vast/bundles:/vast/bundles:rslave -v /dev:/dev  --label=role=vms -e VMS_IMAGE=$FULL_IMAGE $FULL_IMAGE ;
+}
 function grepindent() { grep -nE "^ {$1}" $3 | grep -vE " {$2}"; }
+function analyse() {
+    PARAMS=$@
+    docker run --rm=true -e GITLAB_TOKEN=$GITLAB_ACCESS_TOKEN -e GITLAB_ANALYZER_PARAMS="$PARAMS" 110450271409.dkr.ecr.eu-west-1.amazonaws.com/dev/configs:gitlab_jobs_analyzer_latest
+}
 
 # git aliases
 alias g='git'
-alias ggi='git grep'
-alias gg='git grep -i'
-alias gs='git status'
-alias gss='git show --stat'
-alias gf='git fetch'
-alias gpr='git pull --rebase'
-alias gr='git fetch && git rebase'
-alias gri='git fetch && git rebase -i'
-alias gro='git fetch && git rebase -i --onto'
+alias gt='gitter'
+alias gtc='gitter checkout'
+alias ggi='g grep'
+alias gg='g grep -i'
+alias gs='g status'
+alias gss='g show --stat'
+alias gf='g fetch'
+alias gfq='gf -q'
+alias gpr='g pull --rebase'
+alias gr='g fetch && g rebase'
+alias gra='g rebase --abort'
+alias gri='g fetch && g rebase --autosquash -i'
+alias grn='g rebase --autosquash -i'
 alias grm='gr origin/master'
 alias grr='gr origin/release/$RELEASE'
 alias grim='gri origin/master'
+alias grnm='grn origin/master'
 alias grir='gri origin/release/$RELEASE'
-alias grom='gro origin/master'
-alias gror='gro origin/release/$RELEASE'
-alias gau='git add -u'
-alias grc='git rebase --continue'
-alias gau='git add -u'
-alias gbl='git blame HEAD'
-alias gsu='git submodule update --init'
-alias grso='git remote show origin'
+alias grnr='grn origin/release/$RELEASE'
+alias grt='gr origin/$TEAM'
+alias grit='gri origin/$TEAM'
+alias grnt='grn origin/$TEAM'
+alias gre='gr origin/$INTEGRATION'
+alias grie='gri origin/$INTEGRATION'
+alias grne='grn origin/$INTEGRATION'
+alias gau='g add -u'
+alias grc='g rebase --continue'
+alias gau='g add -u'
+alias gbl='g blame HEAD'
+alias gsu='g submodule update --init'
+alias grso='g remote show origin'
 alias gmine='gbr -Eo "aviv.*"'
 alias gmineline='gmine | tr -s "\n" " "'
-alias gc='git checkout'
-alias gd='git diff'
-alias gdc='git diff --cached'
-alias gl='git log'
-alias glo='git log --oneline'
-alias gb='git branch -vv'
+alias gc='g checkout'
+alias gd='g diff'
+alias gdc='g diff --cached'
+alias gl='g log'
+alias glo='g log --oneline'
+alias gb='g branch -vv'
 alias gbg='gb | grep'
 alias gbr='gb -r | grep'
-alias glaviv='git log --author="Aviv Shahar"'
+alias gbclean='gf; git branch --merged | grep -v "\*" | xargs git branch -d'
+alias gbcleanall='gf; git branch | grep -v "\*" | xargs git branch -d'
+alias glaviv='g log --no-merges --author="Aviv Shahar"'
+alias contains='g branch -r -l 'origin/release/*' -l 'origin/master' --contains'
+alias myresolved='gfq && glaviv --oneline origin/master | grep ORION | head -n 20'
+# alias updisp="export DISPLAY=`echo $SSH_CLIENT | awk {'print $1'}`:0.0"
+JQ_QUERY='.[] | "\(.ref)\t\t\t \(.web_url)"'
+alias mypipes='http https://git.vastdata.com/api/v4/projects/3/pipelines username==aviv PRIVATE-TOKEN:$GITLAB_ACCESS_TOKEN | jq -r "$JQ_QUERY" | head -n 5'
 alias gclean='g clean -fdx -e .vagrant -e .sconsign.dblite'
 alias gurl='grep url .git/config | grep -Eo "git@.*" | pbcopy'
+alias gamp='g amend -p'
+alias greword='g commit --amend'
+alias teamdiff_='gl origin/master..origin/$TEAM --no-merges --pretty=format:"%h%x09%an%x09%ad%x09%s"'
+alias teamdiffapp_='gl origin/master..origin/$TEAM2 --no-merges --pretty=format:"%h%x09%an%x09%ad%x09%s"'
+alias teamdiffintegration_='glaviv --oneline origin/release/$RELEASE..origin/$INTEGRATION --no-merges'
+alias teamdiffexp_='glaviv --oneline origin/release/$RELEASE..origin/TEAM/expansion --no-merges'
+alias teamdiffaviv_='teamdiff_ --author="Aviv Shahar"; teamdiffapp_ --author="Aviv Shahar"; teamdiffintegration_ --author="Aviv Shahar"; teamdiffexp_ --author="Aviv Shahar"; '
+alias teamdiff='gfq; teamdiff_'
+alias teamdiffapp='gfq; teamdiffapp_'
+alias teamdiffaviv='gfq; teamdiffaviv_'
+alias teamdiffintegration='gfq; teamdiffintegration_'
+alias teamdiffexp='gfq; teamdiffexp_'
+alias teamdiffall='gfq; echo MGMT-sys: ; teamdiff_ ; echo; echo MGMT-app ; teamdiffapp_; echo; echo integration: ; teamdiffintegration_; echo; echo expansion: ; teamdiffexp_; echo; echo aviv: ; teamdiffaviv_'
 
-function gbc () { git branch | grep $1 | xargs git checkout ; }
-function gload() { gf ; g stash ; g reset --hard origin/avivshahar/`git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,'` ; g stash pop ; }
-function gbs () { git branch | grep $1 | xargs git show ; }
-function gbss () { git branch | grep $1 | xargs git show --stat; }
-function gbd () { git branch | grep $1 | head -n 1 | xargs git branch -d ; }
-function gbD () { git branch | grep $1 | head -n 1 | xargs git branch -D ; }
-function gpopto () { git stash && export LAST_BRANCH=`git rev-parse --abbrev-ref HEAD` && gbc $1; }
+function gcp () { gc $(./scripts/pipe2hash.sh $1) ; }
+function gstart () { gf; g stash ; g start $@ ; g stash pop ; }
+function gstartexp () { gf; g stash ; g start $1 $INTEGRATION ; g stash pop ; }
+function gfp () { g fixup $1 -p ; }
+function gbc () { g branch | grep $1 | xargs git checkout ; }
+function gload() { gf ; g stash ; g reset --hard origin/avivshahar/`g symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,'` ; g stash pop ; }
+function gbs () { g branch | grep $1 | xargs git show ; }
+function gbss () { g branch | grep $1 | xargs git show --stat; }
+function gbd () { g branch | grep $1 | head -n 1 | xargs git branch -d ; }
+function gbD () { g branch | grep $1 | head -n 1 | xargs git branch -D ; }
+function gpopto () { g stash && export LAST_BRANCH=`g rev-parse --abbrev-ref HEAD` && gbc $1; }
 function gpopback () { gbc $LAST_BRANCH && g stash pop; }
-function gprps () { git push -f origin HEAD:$1/`git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,'`/$USER; }
+function gprps () { g push -f origin HEAD:$1/`g symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,'`/$USER; }
+function gdp() { glo --pretty=format:'%h%x09%an%x09%ad%x09%s' --no-merges $(./scripts/pipe2hash.sh $1)..$(./scripts/pipe2hash.sh $2) $@; }
+
 
 # folders
 alias cdn='cd ~/vast/orion'
@@ -179,6 +258,17 @@ alias cdc='cd ~/vast/configs'
 alias cdt='cd ~/vast/tools'
 
 # logins
-function bonzo () { ssh -t bonzo "cd bonzo/traces/*-$1; bash" ; }
-function venus () { ssh -t bonzo "cd venus/traces/*-$1; bash" ; }
-function venusm2 () { ssh -t bonzo "cd venusM2/traces/*-$1; bash" ; }
+alias sshc='ssh-copy-id'
+function sshcl () { sshc $1; ssh $@ ; }
+function jupiter () { ssh -t jupiter "cd */traces/*-$1; bash" ; }
+function cali () { ssh -t cali "cd */traces/*-$1; bash" ; }
+alias jup=jupiter
+function bonzo () { ssh -t bonzo "cd */traces/*$1; bash" ; }
+function bonzoj () { ssh -t bonzo "cd */jenkins/*$1; bash" ; }
+function venus () { ssh -t bonzo "cd */traces/*-$1; bash" ; }
+function dogli () { ssh -t dogli "cd */traces/*-$1; bash" ; }
+function mitac () { ssh -t mitac "cd */traces/*-$1; bash" ; }
+function ny () { ssh -t nydebug "cd venus*/traces/*-$1; bash" ; }
+function dbg () { sshpass -p vastdata ssh v$1dbg -t "cd venus*/traces/*-$2; bash" ; }
+alias lacat=ny
+

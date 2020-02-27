@@ -5,10 +5,6 @@
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return
 
-# allowing auto complete for git commands names
-# result of "complete -p git" ==> complete -o bashdefault -o default -o nospace -F _git git
-. ~/scripts/git-completion.bash
-
 # don't put duplicate lines in the history. See bash(1) for more options
 # ... or force ignoredups and ignorespace
 # HISTCONTROL=ignoredups:ignorespace
@@ -19,6 +15,7 @@ shopt -s histappend
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 HISTSIZE=100000
 HISTFILESIZE=200000
+HISTTIMEFORMAT="%d/%m/%y %T "
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -124,3 +121,7 @@ chmod 777 $SSH_TTY
 
 
 # export PATH="$PATH:$HOME/.rvm/bin" # Add RVM to PATH for scripting
+
+# fzf
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+export FZF_DEFAULT_OPTS="--layout=reverse --height 40%"

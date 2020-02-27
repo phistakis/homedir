@@ -1,24 +1,39 @@
+# This is Git's per-user configuration file.
 [user]
-	name = Aviv Shahar 
-	email = ashahar@cisco.com
-[color]
-	diff = auto
-	status = auto
-	branch = auto
+# Please adapt and uncomment the following lines:
+    name = Aviv Shahar
+    email = aviv@vastdata.com
+#[color]
+#    diff = auto
+#    status = auto
+#    branch = auto
+#    ui = auto
 [core]
-	excludesfile = /Users/$USER/.gitignore_global
-	autocrlf = input
+    excludesfile = /Users/$USER/.gitignore_global
+    autocrlf = input
 [alias]
-    trash = !git add . && git commit -m 'trash' && git reset --hard HEAD^
-    propose = !git push origin +HEAD:$USER/$(git-symbolic-ref HEAD | sed 's/^refs\\/heads\\///')
-    unpropose = !git push origin +:$USER/$(git-symbolic-ref HEAD | sed 's/^refs\\/heads\\///')
+    # target = MGMT/$(git-symbolic-ref HEAD | sed 's/^refs\\/heads\\///')/$USER
+    # mrlink = https://git.vastdata.com/dev/orion/merge_requests/new?merge_request[source_branch]=$TARGET&merge_request[target_branch]=master
+    trash = !git add . && git commit -am 'trash' && git reset --hard HEAD^
+    bla = !git commit -am 'bla'
+    blas = !git bla && git push -u origin +HEAD:$USER/$(git-symbolic-ref HEAD | sed 's/^refs\\/heads\\///')
+    # bla = !git commit -am 'bla' && git push -u origin +HEAD:$USER/$(git-symbolic-ref HEAD | sed 's/^refs\\/heads\\///')
+    save = !git push origin +HEAD:$USER/$(git-symbolic-ref HEAD | sed 's/^refs\\/heads\\///')
+    unsave = !git push origin +:$USER/$(git-symbolic-ref HEAD | sed 's/^refs\\/heads\\///')
+    mgmt = !git push origin +HEAD:MGMT/$(git-symbolic-ref HEAD | sed 's/^refs\\/heads\\///')/$USER
+    comet = !git push origin +HEAD:COMET/$(git-symbolic-ref HEAD | sed 's/^refs\\/heads\\///')/$USER
+    prps = "!f() {  DEFAULT=MGMT; source=${1-$DEFAULT}/$(git symbolic-ref --short HEAD)/$USER; dest=$(git rev-parse --symbolic-full-name --abbrev-ref '@{u}' | sed 's/origin\\///'); branch_stat=$(git push --verbose --force --porcelain origin HEAD:$source | tee /dev/stderr | cut -s -f1); if [ \"$branch_stat\" = '*' ]; then open \"https://git.vastdata.com/dev/orion/merge_requests/new?merge_request%5Bsource_branch%5D=$source&merge_request%5Btarget_branch%5D=$dest&merge_request%5Bforce_remove_source_branch%5D=1\"; fi }; f"
+    # prps = !git push origin -o merge_request.create -o merge_request.target=TEAM/mgmt +HEAD:MGMT/$(git-symbolic-ref HEAD | sed 's/^refs\\/heads\\///')/$USER
+    build = !git push origin +HEAD:BUILD/$(git-symbolic-ref HEAD | sed 's/^refs\\/heads\\///')/$USER
+    resolve = !git commit -v --template ~/.gitresolves
     graph = log --graph --pretty=format:'%C(yellow)%h%Creset%C(yellow bold)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+    amend = commit --amend -C HEAD
+    fixup = commit --fixup
+    cpm = commit -pm
+    start = "!f() { DEFAULT=$TEAM; git checkout -b $1 -t origin/${2-$DEFAULT}; }; f"
 [push]
-    default = tracking
-
-[difftool "sourcetree"]
-	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
-	path = 
-[mergetool "sourcetree"]
-	cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
-	trustExitCode = true
+	default = current
+[help]
+    autocorrect = 1
+[branch]
+    autosetuprebase = always
